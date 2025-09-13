@@ -1,3 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Daily Sky — Routine Tracker</title><meta name="description" content="Daily Sky: Offline-first routine tracker using localStorage, notifications, & animations." /><style>:root{--bg:#f0f4ff;--card:#ffffff;--muted:#6b7280;--accent:#4f46e5;--success:#22c55e;--danger:#ef4444;--radius:16px;--shadow:0 6px 18px rgba(0,0,0,0.1);}body{margin:0;padding:20px;font-family:'Segoe UI',sans-serif;background:var(--bg);color:#1f2937;}header{display:flex;align-items:center;gap:12px;margin-bottom:14px}.logo{display:flex;align-items:center;gap:10px}.logo .mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#00d2ff);display:grid;place-items:center;font-weight:700;box-shadow:var(--shadow)}h1{margin:0;font-size:20px}p.lead{margin:0;color:var(--muted);font-size:13px}.card{background:var(--card);padding:18px;border-radius:var(--radius);box-shadow:var(--shadow);}.controls{display:flex;gap:10px;align-items:center;margin-bottom:14px}.add-row{display:flex;gap:8px}.add-input{flex:1;display:flex;gap:8px}input[type="text"],input[type="time"],input[type="date"]{background:transparent;border:1px solid rgba(0,0,0,0.1);padding:10px 12px;border-radius:var(--radius);color:inherit;outline:none;min-width:0;transition:all 0.25s ease;}input:focus{border-color:var(--accent);box-shadow:0 4px 10px rgba(79,70,229,0.2);}input::placeholder{color:var(--muted)}button.btn{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:var(--radius);cursor:pointer;box-shadow:0 6px 18px rgba(79,70,229,0.16);transition:transform 0.25s ease,opacity 0.25s ease;}button.btn:active{transform:translateY(2px)}.list{display:flex;flex-direction:column;gap:12px;margin-top:6px}.task{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--radius);border:1px solid rgba(0,0,0,0.05);background:var(--card);transition:transform 0.25s ease,box-shadow 0.25s ease,background 0.25s ease;}.task:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.12)}.task .meta{flex:1;min-width:0;}.task h3{margin:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all 0.25s ease;}.task p{margin:4px 0 0;color:var(--muted);font-size:13px;}.actions{display:flex;gap:8px;align-items:center}.icon-btn{background:transparent;border:0;padding:6px 10px;border-radius:8px;cursor:pointer;transition:all 0.25s ease;}.icon-btn:hover{transform:scale(1.15);}.icon-btn:disabled{opacity:0.5;cursor:not-allowed}.toast-wrap{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px}.toast{padding:12px 14px;border-radius:var(--radius);background:rgba(255,255,255,0.95);box-shadow:0 6px 18px rgba(0,0,0,0.1);min-width:220px;font-weight:bold;opacity:0;transform:translateY(20px);transition:all 0.4s ease;}.toast.show{opacity:1;transform:translateY(0);}.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;justify-content:center;align-items:center;z-index:1000;}.modal{background:var(--card);padding:20px;border-radius:var(--radius);box-shadow:0 6px 18px rgba(0,0,0,0.1);text-align:center;min-width:280px;}.modal h2{margin-top:0;font-size:16px;color:#1f2937;}.modal .btn-group{display:flex;justify-content:center;gap:10px;margin-top:14px;}.modal .btn-group button{padding:8px 16px;cursor:pointer;border-radius:var(--radius);border:none;transition:all 0.25s ease;}.modal .btn-group .cancel{background:#9ca3af;color:white;}.modal .btn-group .delete-confirm{background:#ef4444;color:white;}footer{margin-top:14px;color:var(--muted);font-size:13px;text-align:center}</style></head><body><header><div class="logo"><div class="mark">☀️</div><div><h1>Daily Sky</h1><p class="lead">Routine tracker — offline, fun, and simple.</p></div></div></header><main class="card"><div class="controls"><div class="add-row" style="flex:1"><div class="add-input"><input id="taskInput" type="text" placeholder="Add a routine..." /><input id="timeInput" type="time" value="08:00" /></div><button id="addBtn" class="btn">+ Add</button></div></div><div id="list" class="list"></div><footer>Daily Sky • Offline • localStorage • Notifications</footer></main><div class="toast-wrap" id="toasts"></div><div id="deleteModal" class="modal-overlay" style="display:none;"><div class="modal"><h2>Are you sure? to delete this</h2><div class="btn-group"><button class="cancel">Cancel</button><button class="delete-confirm">Delete</button></div></div></div><script type="module">const listEl=document.getElementById('list');const taskInput=document.getElementById('taskInput');const timeInput=document.getElementById('timeInput');const addBtn=document.getElementById('addBtn');const toasts=document.getElementById('toasts');const deleteModal=document.getElementById('deleteModal');const cancelBtn=deleteModal.querySelector('.cancel');const deleteConfirmBtn=deleteModal.querySelector('.delete-confirm');let routines=JSON.parse(localStorage.getItem('routines')||'[]');let deleteIndex=null;function save(){localStorage.setItem('routines',JSON.stringify(routines));}function showToast(msg){const t=document.createElement('div');t.className='toast show';t.innerText=msg;toasts.appendChild(t);setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),400);},2000);}function render(){listEl.innerHTML='';routines.forEach((t,idx)=>{const el=document.createElement('div');el.className='task '+(t.status||'pending');const doneDisabled=t.status!=='pending'?'disabled':'';el.innerHTML=`<div class="meta"><h3>${t.text}</h3><p>${t.time||'--:--'}</p></div><div class="actions"><button class="icon-btn done" ${doneDisabled}>✅</button><button class="icon-btn notdone" ${doneDisabled}>❌</button><button class="icon-btn edit">✏️</button><button class="icon-btn delete">🗑️</button></div>`;const doneBtn=el.querySelector('.done');const notdoneBtn=el.querySelector('.notdone');const editBtn=el.querySelector('.edit');const deleteBtn=el.querySelector('.delete');doneBtn.addEventListener('click',()=>{if(doneBtn.disabled)return;t.status='done';save();render();showToast('🎉 Congrates! You complited the Routine');});notdoneBtn.addEventListener('click',()=>{if(notdoneBtn.disabled)return;t.status='notdone';save();render();showToast('Opps! Be Hard');});editBtn.addEventListener('click',()=>{const newText=prompt('Edit routine',t.text);if(newText){t.text=newText;save();render();showToast('✏️ Edited');}});deleteBtn.addEventListener('click',()=>{deleteIndex=idx;deleteModal.style.display='flex';});listEl.appendChild(el);});}addBtn.addEventListener('click',()=>{const text=taskInput.value.trim();const time=timeInput.value;if(!text){showToast('Enter a routine');return;}routines.push({text,time,status:'pending'});save();render();taskInput.value='';timeInput.value='08:00';});cancelBtn.addEventListener('click',()=>{deleteModal.style.display='none';deleteIndex=null;});deleteConfirmBtn.addEventListener('click',()=>{if(deleteIndex!==null){routines.splice(deleteIndex,1);save();render();deleteIndex=null;deleteModal.style.display='none';showToast('Deleted');}});render();</script></body></html>
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Sky — Routine Tracker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="mark">☀️</div>
+    <div>
+      <h1>Daily Sky</h1>
+      <p class="lead">Routine tracker — offline, fun, and simple.</p>
+    </div>
+  </div>
+</header>
+<main class="card">
+  <div class="controls">
+    <div class="add-row" style="flex:1">
+      <div class="add-input">
+        <input id="taskInput" type="text" placeholder="Add a routine..." />
+        <input id="timeInput" type="time" value="08:00" />
+      </div>
+      <button id="addBtn" class="btn">+ Add</button>
+    </div>
+  </div>
+  <div id="list" class="list"></div>
+  <footer>Daily Sky • Offline • localStorage • Notifications</footer>
+</main>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<div id="deleteModal" class="modal-overlay" style="display:none;">
+  <div class="modal">
+    <h2>Are you sure? to delete this</h2>
+    <div class="btn-group">
+      <button class="cancel">Cancel</button>
+      <button class="delete-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
 
 
